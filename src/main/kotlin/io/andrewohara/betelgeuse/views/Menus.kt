@@ -11,9 +11,9 @@ object Menus {
         currentConnection: () -> ConnectionData?,
         selectConnection: (ConnectionData) -> Unit
     ): MenuBar {
-        val newConnection = MenuItem("New")
+        val newConnection = MenuItem("Create")
         newConnection.setOnAction {
-            Dialogs.connectionDialog().showAndWait().ifPresent(createConnection)
+            Dialogs.createConnection().showAndWait().ifPresent(createConnection)
         }
 
         val connectMenu = Menu("Connections")

@@ -5,11 +5,12 @@ import javafx.collections.ObservableList
 import javafx.scene.control.Button
 import javafx.scene.control.ListView
 import javafx.scene.layout.BorderPane
-import javafx.scene.layout.HBox
 import redis.clients.jedis.Jedis
-import java.util.*
 
-class KeysView(private val client: () -> Jedis?, onClick: (String) -> Unit): BorderPane() {
+class KeysView(
+    private val client: () -> Jedis?,
+    selectKey: (String) -> Unit
+): BorderPane() {
 
     private val items: ObservableList<String>
 
@@ -17,28 +18,27 @@ class KeysView(private val client: () -> Jedis?, onClick: (String) -> Unit): Bor
         val refreshButton = Button("Refresh")
         refreshButton.setOnAction { refresh() }
 
-        val addButton = Button("+")
-        addButton.setOnAction {
-            add()
-            refresh()
-        }
-
         val listView = ListView<String>()
         listView.setOnMouseClicked {
             val item = listView.selectionModel.selectedItem ?: return@setOnMouseClicked
-            onClick(item)
+            selectKey(item)
         }
         items = listView.items
 
-        top = HBox(refreshButton, addButton)
+        val addButton = Button("Create")
+        addButton.setOnAction {
+            Dialogs.createKey().showAndWait().ifPresent { key ->
+                items += key
+                listView.selectionModel.select(key)
+                selectKey(key)
+            }
+        }
+
+        top = refreshButton
         center = listView
+        bottom = addButton
 
         refresh()
-    }
-
-    var counter = 0
-    private fun add() {
-        client()?.set("key${counter++}", UUID.randomUUID().toString())
     }
 
 

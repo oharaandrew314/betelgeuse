@@ -6,7 +6,7 @@ import javafx.scene.layout.GridPane
 
 object Dialogs {
 
-    fun connectionDialog(): Dialog<ConnectionData> {
+    fun createConnection(): Dialog<ConnectionData> {
         return Dialog<ConnectionData>().apply {
             title = "Connect to Database"
 
@@ -46,5 +46,12 @@ object Dialogs {
                 } else null
             }
         }
+    }
+
+    fun createKey(): Dialog<String> {
+        val dialog = TextInputDialog("")
+        dialog.headerText = "Create a new Entry"
+        dialog.contentText = "key"
+        return dialog
     }
 }
