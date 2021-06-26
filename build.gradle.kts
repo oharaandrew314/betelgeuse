@@ -16,6 +16,7 @@ dependencies {
     implementation(kotlin("stdlib"))
 
     implementation("redis.clients:jedis:3.6.1")
+    implementation("com.squareup.moshi:moshi:1.12.0")
 
 }
 
