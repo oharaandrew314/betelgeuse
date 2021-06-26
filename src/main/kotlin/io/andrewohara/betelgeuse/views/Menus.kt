@@ -1,22 +1,34 @@
 package io.andrewohara.betelgeuse.views
 
-import javafx.scene.control.Menu
-import javafx.scene.control.MenuBar
-import javafx.scene.control.MenuItem
+import io.andrewohara.betelgeuse.ConnectionData
+import javafx.scene.control.*
 
 object Menus {
 
-    fun menuBar(): MenuBar {
-        val createConnection = MenuItem("New")
-        createConnection.setOnAction {
-            Dialogs.connectionDialog().showAndWait().ifPresent { data ->
-                println(data.buttonData)
-            }
+    fun menuBar(
+        createConnection: (ConnectionData) -> Unit,
+        getConnections: () -> List<ConnectionData>,
+        currentConnection: () -> ConnectionData?,
+        selectConnection: (ConnectionData) -> Unit
+    ): MenuBar {
+        val newConnection = MenuItem("New")
+        newConnection.setOnAction {
+            Dialogs.connectionDialog().showAndWait().ifPresent(createConnection)
         }
 
         val connectMenu = Menu("Connections")
-        connectMenu.items += createConnection
+        connectMenu.items += newConnection
+        connectMenu.items += SeparatorMenuItem()
 
+        connectMenu.setOnShowing {
+            connectMenu.items.removeIf { it is RadioMenuItem }
+            for (connection in getConnections()) {
+                connectMenu.items += RadioMenuItem(connection.name).apply {
+                    isSelected = connection == currentConnection()
+                    setOnAction { selectConnection(connection) }
+                }
+            }
+        }
 
         val bar = MenuBar()
         bar.menus += connectMenu

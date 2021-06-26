@@ -1,5 +1,6 @@
 package io.andrewohara.betelgeuse
 
+import io.andrewohara.betelgeuse.controllers.ConnectionManager
 import io.andrewohara.betelgeuse.views.KeysView
 import io.andrewohara.betelgeuse.views.Menus
 import io.andrewohara.betelgeuse.views.ValueView
@@ -8,8 +9,6 @@ import javafx.stage.Stage
 
 import javafx.scene.Scene
 import javafx.scene.layout.BorderPane
-import redis.clients.jedis.Jedis
-
 
 class Betelgeuse: Application() {
 
@@ -23,21 +22,39 @@ class Betelgeuse: Application() {
     }
 
     override fun start(stage: Stage) {
-        val client = Jedis("localhost", 6379)
+        try {
+            val connectionManager = ConnectionManager()
 
-        val valueView = ValueView(client)
-        val keysView = KeysView(client) { valueView.lookupKey(it) }
+            val valueView = ValueView { connectionManager.getConnection() }
+            val keysView = KeysView(
+                client = { connectionManager.getConnection() },
+                onClick = { valueView.lookupKey(it) }
+            )
+            val menuBar = Menus.menuBar(
+                createConnection = { connectionManager.createConnection(it) },
+                getConnections = { connectionManager.connections() },
+                currentConnection = { connectionManager.selected() },
+                selectConnection = {
+                    connectionManager.selectConnection(it)
+                    keysView.refresh()
+                    valueView.lookupKey(null)
+                }
+            )
 
-        val layout = BorderPane().apply {
-            top = Menus.menuBar()
-            left = keysView
-            center = valueView
+            val layout = BorderPane().apply {
+                top = menuBar
+                left = keysView
+                center = valueView
+            }
+
+            val scene = Scene(layout, 640.toDouble(), 480.toDouble())
+
+            stage.scene = scene
+            stage.title = appName
+            stage.show()
+        } catch (e: Exception) {
+            e.printStackTrace()
+            throw e
         }
-
-        val scene = Scene(layout, 640.toDouble(), 480.toDouble())
-
-        stage.scene = scene
-        stage.title = appName
-        stage.show()
     }
 }

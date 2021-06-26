@@ -9,7 +9,7 @@ import javafx.scene.layout.HBox
 import redis.clients.jedis.Jedis
 import java.util.*
 
-class KeysView(private val client: Jedis, onClick: (String) -> Unit): BorderPane() {
+class KeysView(private val client: () -> Jedis?, onClick: (String) -> Unit): BorderPane() {
 
     private val items: ObservableList<String>
 
@@ -25,7 +25,7 @@ class KeysView(private val client: Jedis, onClick: (String) -> Unit): BorderPane
 
         val listView = ListView<String>()
         listView.setOnMouseClicked {
-            val item = listView.selectionModel.selectedItem
+            val item = listView.selectionModel.selectedItem ?: return@setOnMouseClicked
             onClick(item)
         }
         items = listView.items
@@ -38,12 +38,12 @@ class KeysView(private val client: Jedis, onClick: (String) -> Unit): BorderPane
 
     var counter = 0
     private fun add() {
-        client.set("key${counter++}", UUID.randomUUID().toString())
+        client()?.set("key${counter++}", UUID.randomUUID().toString())
     }
 
 
-    private fun refresh() {
-        val newKeys = client.keySequence()
+    fun refresh() {
+        val newKeys = client()?.keySequence() ?: emptySequence()
 
         items.clear()
         items.addAll(newKeys)

@@ -5,7 +5,7 @@ import javafx.scene.control.TextArea
 import javafx.scene.layout.BorderPane
 import redis.clients.jedis.Jedis
 
-class ValueView(private val client: Jedis): BorderPane() {
+class ValueView(private val client: () -> Jedis?): BorderPane() {
 
     private val field = TextArea()
     private var currentKey: String? = null
@@ -19,14 +19,14 @@ class ValueView(private val client: Jedis): BorderPane() {
         bottom = saveButton
     }
 
-    fun lookupKey(key: String) {
+    fun lookupKey(key: String?) {
         currentKey = key
-        field.text = client.get(key)
+        field.text = if (key == null) "" else client()?.get(key)
     }
 
     private fun save() {
         if (currentKey == null) return
 
-        client.set(currentKey, field.text)
+        client()?.set(currentKey, field.text)
     }
 }
