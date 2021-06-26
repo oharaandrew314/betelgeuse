@@ -34,12 +34,6 @@ class ConnectionManager {
         save()
     }
 
-    private fun save() {
-        val json = jsonAdapter.toJson(connections.toTypedArray())
-        prefs.put("connections", json)
-        prefs.put("selected", selected?.name ?: "")
-    }
-
     fun connections() = connections.toList()
     fun selected() = selected
 
@@ -47,6 +41,12 @@ class ConnectionManager {
         val jedis = Jedis(it.host, it.port)
         jedis.select(it.database)
         jedis
+    }
+
+    private fun save() {
+        val json = jsonAdapter.toJson(connections.toTypedArray())
+        prefs.put("connections", json)
+        prefs.put("selected", selected?.name ?: "")
     }
 
     private fun load() {

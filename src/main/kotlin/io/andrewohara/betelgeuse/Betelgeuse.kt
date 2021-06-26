@@ -36,7 +36,7 @@ class Betelgeuse: Application() {
                 currentConnection = { connectionManager.selected() },
                 selectConnection = {
                     connectionManager.selectConnection(it)
-                    keysView.refresh()
+                    keysView.refresh() // FIXME these components should all listen for a connection-change event
                     valueView.lookupKey(null)
                 }
             )
