@@ -1,6 +1,7 @@
 package io.andrewohara.betelgeuse
 
 import io.andrewohara.betelgeuse.controllers.ConnectionManager
+import io.andrewohara.betelgeuse.views.Dialogs
 import io.andrewohara.betelgeuse.views.KeysView
 import io.andrewohara.betelgeuse.views.Menus
 import io.andrewohara.betelgeuse.views.ValueView
@@ -8,6 +9,7 @@ import javafx.application.Application
 import javafx.stage.Stage
 
 import javafx.scene.Scene
+import javafx.scene.control.ButtonType
 import javafx.scene.layout.BorderPane
 
 class Betelgeuse: Application() {
@@ -29,7 +31,16 @@ class Betelgeuse: Application() {
             val valueView = ValueView { connectionManager.getConnection() }
             val keysView = KeysView(
                 getClient = { connectionManager.getConnection() },
-                selectKey = { valueView.lookupKey(it) }
+                selectKey = { valueView.lookupKey(it) },
+                handleDelete = { key ->
+                    val result = Dialogs.confirmDelete(key).showAndWait()
+                    val confirm = result.orElseGet { ButtonType.CANCEL } == ButtonType.OK
+                    if (confirm) {
+                        connectionManager.getConnection()?.delete(key)
+                    }
+
+                    confirm
+                }
             )
             val menuBar = Menus.menuBar(
                 createConnection = { connectionManager.createConnection(it) },

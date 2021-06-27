@@ -5,19 +5,21 @@ import javafx.collections.ObservableList
 import javafx.scene.control.Button
 import javafx.scene.control.ListView
 import javafx.scene.control.TextField
+import javafx.scene.input.KeyCode
 import javafx.scene.layout.BorderPane
 import javafx.scene.layout.HBox
 
 class KeysView(
     private val getClient: () -> RedisConnection?,
-    selectKey: (String) -> Unit
+    selectKey: (String) -> Unit,
+    handleDelete: (String) -> Boolean
 ): BorderPane() {
 
     companion object {
         private const val limit = 1000
     }
 
-    private var keys = listOf<String>()
+    private var keys = mutableListOf<String>()
     private val displayedKeys: ObservableList<String>
 
     init {
@@ -26,8 +28,8 @@ class KeysView(
 
         val listView = ListView<String>()
         listView.setOnMouseClicked {
-            val item = listView.selectionModel.selectedItem ?: return@setOnMouseClicked
-            selectKey(item)
+            val selected = listView.selectionModel.selectedItem ?: return@setOnMouseClicked
+            selectKey(selected)
         }
         displayedKeys = listView.items
 
@@ -48,6 +50,16 @@ class KeysView(
             }
         }
 
+        listView.setOnKeyPressed { event ->
+            val selected = listView.selectionModel.selectedItem ?: return@setOnKeyPressed
+            if (event.code == KeyCode.DELETE) {
+                if (handleDelete(selected)) {
+                    keys.remove(selected)
+                    displayedKeys.remove(selected)
+                }
+            }
+        }
+
         top = HBox(refreshButton, searchField)
         center = listView
         bottom = addButton
@@ -58,7 +70,7 @@ class KeysView(
 
     fun refresh() {
         val client = getClient() ?: return
-        keys = client.keys().take(limit).toList()
+        keys = client.keys().take(limit).toMutableList()
 
         displayedKeys.setAll(keys)
     }

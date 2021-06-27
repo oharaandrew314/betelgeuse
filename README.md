@@ -4,7 +4,6 @@ Graphical Redis Client
 
 ## TODO
 - Start emulated Redis Servers on the ports of your choice
-- Right click on keys to delete
 - get and set values for the different data-types (e.g. set)
 - Connection Management Dialog to create, edit, select, delete connections
 - alternate key navigator: tree view

@@ -3,6 +3,12 @@ package io.andrewohara.betelgeuse.views
 import io.andrewohara.betelgeuse.ConnectionData
 import javafx.scene.control.*
 import javafx.scene.layout.GridPane
+import javafx.scene.control.Alert.AlertType
+
+import javafx.scene.control.Alert
+
+
+
 
 object Dialogs {
 
@@ -53,5 +59,13 @@ object Dialogs {
         dialog.headerText = "Create a new Entry"
         dialog.contentText = "key"
         return dialog
+    }
+
+    fun confirmDelete(key: String): Alert {
+        val alert = Alert(AlertType.CONFIRMATION)
+        alert.title = "Delete"
+        alert.headerText = "Delete $key"
+        alert.contentText = "Are you want to delete this?"
+        return alert
     }
 }

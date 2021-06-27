@@ -7,6 +7,7 @@ interface RedisConnection {
     fun keys(): Sequence<String>
     operator fun get(key: String): String?
     operator fun set(key: String, value: String)
+    fun delete(key: String)
 }
 
 class JedisConnection(private val jedis: Jedis): RedisConnection {
@@ -27,5 +28,9 @@ class JedisConnection(private val jedis: Jedis): RedisConnection {
 
     override fun set(key: String, value: String) {
         jedis.set(key, value)
+    }
+
+    override fun delete(key: String) {
+        jedis.del(key)
     }
 }
