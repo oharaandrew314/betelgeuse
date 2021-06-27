@@ -64,13 +64,13 @@ runtime {
         // targetPlatformName = "mac"
 
         val currentOs = org.gradle.internal.os.OperatingSystem.current()
-        val imgType = when {
-            currentOs.isWindows -> "ico"
-            currentOs.isMacOsX -> "icns"
-            else -> "png"
-        }
-
-        imageOptions.addAll(listOf("--icon", "src/main/resources/hellofx.$imgType"))
+//        val imgType = when {
+//            currentOs.isWindows -> "ico"
+//            currentOs.isMacOsX -> "icns"
+//            else -> "png"
+//        }
+//
+//        imageOptions.addAll(listOf("--icon", "src/main/resources/betelgeuse.$imgType"))
 
         installerOptions.addAll(listOf(
             "--resource-dir", "src/main/resources",
