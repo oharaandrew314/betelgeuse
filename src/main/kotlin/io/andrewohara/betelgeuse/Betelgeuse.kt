@@ -16,11 +16,12 @@ import javafx.scene.Scene
 import javafx.scene.control.ButtonType
 import javafx.scene.layout.BorderPane
 import org.slf4j.LoggerFactory
+import kotlin.system.exitProcess
 
 class Betelgeuse: Application() {
 
     companion object {
-        private const val appName = "Betelgeuse - Redis Client and Server"
+        private const val appName = "Betelgeuse - Redis Manager"
         private const val keyPageSize = 1000
         private val defaultWindowSize = 640.toDouble() to 480.toDouble()
 
@@ -32,11 +33,21 @@ class Betelgeuse: Application() {
 
     private val log = LoggerFactory.getLogger(javaClass)
 
-    override fun start(stage: Stage) {
-        val settings = PreferencesSettingsManager()
-        val connectionManager = ConnectionManager(settings)
-        val serverManager = ServerManager(settings)
+    private val settings = PreferencesSettingsManager()
+    private val connectionManager = ConnectionManager(settings)
+    private val serverManager = ServerManager(settings)
 
+    private fun updateKeys(view: KeysView) {
+        Thread {
+            val connection = connectionManager.getConnection() ?: return@Thread
+            val keys = connection.keys().take(keyPageSize).toList()
+            Platform.runLater {
+                view.update(keys)
+            }
+        }.start()
+    }
+
+    override fun start(stage: Stage) {
         val valueView = ValueView(
             handleSave = { key, value ->
                 val connection = connectionManager.getConnection() ?: return@ValueView
@@ -45,16 +56,6 @@ class Betelgeuse: Application() {
                 }.start()
             }
         )
-
-        fun updateKeys(view: KeysView) {
-            Thread {
-                val connection = connectionManager.getConnection() ?: return@Thread
-                val keys = connection.keys().take(keyPageSize).toList()
-                Platform.runLater {
-                    view.update(keys)
-                }
-            }.start()
-        }
 
         val keysView = KeysView(
             selectKey = { key ->
@@ -109,12 +110,11 @@ class Betelgeuse: Application() {
             center = valueView
         }
 
-        val scene = Scene(layout, defaultWindowSize.first, defaultWindowSize.second)
-
-        stage.scene = scene
+        stage.scene = Scene(layout, defaultWindowSize.first, defaultWindowSize.second)
         stage.title = appName
         stage.setOnCloseRequest {
             serverManager.stopAll()
+            exitProcess(0)
         }
         stage.show()
 

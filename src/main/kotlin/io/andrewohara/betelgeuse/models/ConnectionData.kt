@@ -1,8 +1,9 @@
 package io.andrewohara.betelgeuse.models
 
 data class ConnectionData(
-    val host: String = "localhost",
-    val port: Int = 6379,
-    val database: Int = 0,
-    val name: String
+    val host: String,
+    val port: Int,
+    val database: Int,
+    val name: String,
+    val proxy: TunnelData?
 )
