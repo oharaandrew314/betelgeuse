@@ -28,6 +28,6 @@ class ValueView(private val client: () -> RedisConnection?): BorderPane() {
         val client = client() ?: return
         val key = currentKey ?: return
 
-        client[key] = field.text
+        client[key] = field.text ?: ""
     }
 }

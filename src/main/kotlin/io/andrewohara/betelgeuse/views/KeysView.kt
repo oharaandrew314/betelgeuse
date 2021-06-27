@@ -4,7 +4,9 @@ import io.andrewohara.betelgeuse.controllers.RedisConnection
 import javafx.collections.ObservableList
 import javafx.scene.control.Button
 import javafx.scene.control.ListView
+import javafx.scene.control.TextField
 import javafx.scene.layout.BorderPane
+import javafx.scene.layout.HBox
 
 class KeysView(
     private val getClient: () -> RedisConnection?,
@@ -15,7 +17,8 @@ class KeysView(
         private const val limit = 1000
     }
 
-    private val items: ObservableList<String>
+    private var keys = listOf<String>()
+    private val displayedKeys: ObservableList<String>
 
     init {
         val refreshButton = Button("Refresh")
@@ -26,18 +29,26 @@ class KeysView(
             val item = listView.selectionModel.selectedItem ?: return@setOnMouseClicked
             selectKey(item)
         }
-        items = listView.items
+        displayedKeys = listView.items
+
+        val searchField = TextField().apply {
+            promptText = "Search"
+            setOnKeyTyped { _ ->
+                val filtered = keys.filter { key -> text in key }
+                displayedKeys.setAll(filtered)
+            }
+        }
 
         val addButton = Button("Create")
         addButton.setOnAction {
             Dialogs.createKey().showAndWait().ifPresent { key ->
-                items += key
+                displayedKeys += key
                 listView.selectionModel.select(key)
                 selectKey(key)
             }
         }
 
-        top = refreshButton
+        top = HBox(refreshButton, searchField)
         center = listView
         bottom = addButton
 
@@ -47,9 +58,8 @@ class KeysView(
 
     fun refresh() {
         val client = getClient() ?: return
-        val newKeys = client.keys().take(limit)
+        keys = client.keys().take(limit).toList()
 
-        items.clear()
-        items.addAll(newKeys)
+        displayedKeys.setAll(keys)
     }
 }

@@ -14,6 +14,7 @@ class Betelgeuse: Application() {
 
     companion object {
         private const val appName = "Betelgeuse - Redis Client"
+        private val defaultWindowSize = 640.toDouble() to 480.toDouble()
 
         @JvmStatic
         fun main(args: Array<String>) {
@@ -47,7 +48,7 @@ class Betelgeuse: Application() {
                 center = valueView
             }
 
-            val scene = Scene(layout, 640.toDouble(), 480.toDouble())
+            val scene = Scene(layout, defaultWindowSize.first, defaultWindowSize.second)
 
             stage.scene = scene
             stage.title = appName
