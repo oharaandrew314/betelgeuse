@@ -1,6 +1,7 @@
 package io.andrewohara.betelgeuse.views
 
 import io.andrewohara.betelgeuse.controllers.RedisConnection
+import javafx.beans.Observable
 import javafx.collections.ObservableList
 import javafx.scene.control.Button
 import javafx.scene.control.ListView
@@ -27,8 +28,8 @@ class KeysView(
         refreshButton.setOnAction { refresh() }
 
         val listView = ListView<String>()
-        listView.setOnMouseClicked {
-            val selected = listView.selectionModel.selectedItem ?: return@setOnMouseClicked
+        listView.selectionModel.selectedItemProperty().addListener { _ :Observable ->
+            val selected = listView.selectionModel.selectedItem ?: return@addListener
             selectKey(selected)
         }
         displayedKeys = listView.items
