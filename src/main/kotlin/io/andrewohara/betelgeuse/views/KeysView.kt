@@ -1,16 +1,19 @@
 package io.andrewohara.betelgeuse.views
 
-import io.andrewohara.betelgeuse.jedis.keySequence
+import io.andrewohara.betelgeuse.controllers.RedisConnection
 import javafx.collections.ObservableList
 import javafx.scene.control.Button
 import javafx.scene.control.ListView
 import javafx.scene.layout.BorderPane
-import redis.clients.jedis.Jedis
 
 class KeysView(
-    private val client: () -> Jedis?,
+    private val getClient: () -> RedisConnection?,
     selectKey: (String) -> Unit
 ): BorderPane() {
+
+    companion object {
+        private const val limit = 1000
+    }
 
     private val items: ObservableList<String>
 
@@ -43,7 +46,8 @@ class KeysView(
 
 
     fun refresh() {
-        val newKeys = client()?.keySequence() ?: emptySequence()
+        val client = getClient() ?: return
+        val newKeys = client.keys().take(limit)
 
         items.clear()
         items.addAll(newKeys)

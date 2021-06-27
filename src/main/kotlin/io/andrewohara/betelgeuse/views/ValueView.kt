@@ -1,11 +1,11 @@
 package io.andrewohara.betelgeuse.views
 
+import io.andrewohara.betelgeuse.controllers.RedisConnection
 import javafx.scene.control.Button
 import javafx.scene.control.TextArea
 import javafx.scene.layout.BorderPane
-import redis.clients.jedis.Jedis
 
-class ValueView(private val client: () -> Jedis?): BorderPane() {
+class ValueView(private val client: () -> RedisConnection?): BorderPane() {
 
     private val field = TextArea()
     private var currentKey: String? = null
@@ -25,8 +25,9 @@ class ValueView(private val client: () -> Jedis?): BorderPane() {
     }
 
     private fun save() {
-        if (currentKey == null) return
+        val client = client() ?: return
+        val key = currentKey ?: return
 
-        client()?.set(currentKey, field.text)
+        client[key] = field.text
     }
 }

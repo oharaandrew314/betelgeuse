@@ -37,10 +37,10 @@ class ConnectionManager {
     fun connections() = connections.toList()
     fun selected() = selected
 
-    fun getConnection() = selected?.let {
+    fun getConnection(): RedisConnection? = selected?.let {
         val jedis = Jedis(it.host, it.port)
         jedis.select(it.database)
-        jedis
+        JedisConnection(jedis)
     }
 
     private fun save() {

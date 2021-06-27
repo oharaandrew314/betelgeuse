@@ -12,3 +12,4 @@ Graphical Redis Client
 - limit keys in view to X
 - perform backend tasks in background (don't lock up GUI)
 - Connect via SSH Tunnel
+- build native distributables (https://github.com/beryx-gist/badass-runtime-example-javafx)

@@ -27,7 +27,7 @@ class Betelgeuse: Application() {
 
             val valueView = ValueView { connectionManager.getConnection() }
             val keysView = KeysView(
-                client = { connectionManager.getConnection() },
+                getClient = { connectionManager.getConnection() },
                 selectKey = { valueView.lookupKey(it) }
             )
             val menuBar = Menus.menuBar(
