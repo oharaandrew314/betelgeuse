@@ -1,14 +1,12 @@
 package io.andrewohara.betelgeuse.views
 
-import io.andrewohara.betelgeuse.ConnectionData
+import io.andrewohara.betelgeuse.models.ConnectionData
+import io.andrewohara.betelgeuse.models.ServerData
 import javafx.scene.control.*
 import javafx.scene.layout.GridPane
 import javafx.scene.control.Alert.AlertType
 
 import javafx.scene.control.Alert
-
-
-
 
 object Dialogs {
 
@@ -67,5 +65,34 @@ object Dialogs {
         alert.headerText = "Delete $key"
         alert.contentText = "Are you want to delete this?"
         return alert
+    }
+
+    fun createServer(): Dialog<ServerData> {
+        return Dialog<ServerData>().apply {
+            title = "Create Server"
+
+            val content = GridPane()
+
+            content.add(Label("Name"), 0, 0)
+            val nameField = TextField().also {
+                content.add(it, 1, 0)
+            }
+
+            content.add(Label("Port"), 0, 1)
+            val portField = TextField().also {
+                content.add(it, 1, 1)
+            }
+
+            dialogPane.content = content
+
+            dialogPane.buttonTypes += ButtonType("Save", ButtonBar.ButtonData.APPLY)
+            dialogPane.buttonTypes += ButtonType("Cancel", ButtonBar.ButtonData.CANCEL_CLOSE)
+
+            setResultConverter { dialogButton ->
+                if (dialogButton.buttonData == ButtonBar.ButtonData.APPLY) {
+                    ServerData(name = nameField.text, port = portField.text.toInt())
+                } else null
+            }
+        }
     }
 }

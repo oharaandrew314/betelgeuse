@@ -2,6 +2,7 @@ package io.andrewohara.betelgeuse.controllers
 
 import redis.clients.jedis.Jedis
 import redis.clients.jedis.ScanParams
+import java.net.SocketTimeoutException
 
 interface RedisConnection {
     fun keys(): Sequence<String>
@@ -13,24 +14,40 @@ interface RedisConnection {
 class JedisConnection(private val jedis: Jedis): RedisConnection {
 
     override fun keys(): Sequence<String> {
-        var cursor = ""
+        var cursor = ScanParams.SCAN_POINTER_START
 
-        return sequence {
-            while(cursor != ScanParams.SCAN_POINTER_START) {
-                val result = jedis.scan(cursor)
-                cursor = result.cursor
-                yieldAll(result.result)
+        return try {
+            sequence {
+                do {
+                    val result = jedis.scan(cursor)
+                    cursor = result.cursor
+                    yieldAll(result.result)
+                } while (cursor != ScanParams.SCAN_POINTER_START)
             }
+        } catch (e: SocketTimeoutException) {
+            emptySequence()
         }
     }
 
-    override fun get(key: String): String? = jedis.get(key)
+    override fun get(key: String): String? = try {
+        jedis.get(key)
+    } catch (e: SocketTimeoutException) {
+        null
+    }
 
     override fun set(key: String, value: String) {
-        jedis.set(key, value)
+        try {
+            jedis.set(key, value)
+        } catch (e: SocketTimeoutException) {
+            // TODO return error
+        }
     }
 
     override fun delete(key: String) {
-        jedis.del(key)
+        try {
+            jedis.del(key)
+        } catch (e: SocketTimeoutException) {
+            // TODO return error
+        }
     }
 }

@@ -1,4 +1,4 @@
-package io.andrewohara.betelgeuse
+package io.andrewohara.betelgeuse.models
 
 data class ConnectionData(
     val host: String = "localhost",

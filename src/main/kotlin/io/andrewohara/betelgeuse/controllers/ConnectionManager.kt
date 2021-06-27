@@ -1,64 +1,38 @@
 package io.andrewohara.betelgeuse.controllers
 
-import com.squareup.moshi.Moshi
-import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
-import io.andrewohara.betelgeuse.Betelgeuse
-import io.andrewohara.betelgeuse.ConnectionData
+import io.andrewohara.betelgeuse.models.ConnectionData
 import redis.clients.jedis.Jedis
-import java.util.prefs.Preferences
 
-class ConnectionManager {
+class ConnectionManager(private val settings: SettingsManager) {
 
-    private val connections = mutableListOf<ConnectionData>()
-    private var selected: ConnectionData? = null
-
-    private val prefs = Preferences.userNodeForPackage(Betelgeuse::class.java)
-
-    private val jsonAdapter = Moshi.Builder()
-        .addLast(KotlinJsonAdapterFactory())
-        .build()
-        .adapter(Array<ConnectionData>::class.java)
-
-    init {
-        load()
+    private val connections = settings.getConnections().toMutableList()
+    private var selected = settings.getSelectedConnection()?.let { name ->
+        connections.firstOrNull { it.name == name }
     }
 
-    fun createConnection(data: ConnectionData) {
+    fun createConnection(data: ConnectionData): RedisConnection {
         connections += data
         selected = data
-        save()
+
+        settings.updateConnections(connections)
+
+        return data.connect()
     }
 
-    fun selectConnection(connectionData: ConnectionData) {
+    fun selectConnection(connectionData: ConnectionData): RedisConnection {
         selected = connectionData
-        save()
+        settings.updateSelectedConnection(selected?.name)
+        return connectionData.connect()
     }
 
     fun connections() = connections.toList()
     fun selected() = selected
 
-    fun getConnection(): RedisConnection? = selected?.let {
-        val jedis = Jedis(it.host, it.port)
-        jedis.select(it.database)
-        JedisConnection(jedis)
-    }
+    fun getConnection(): RedisConnection? = selected?.connect()
 
-    private fun save() {
-        val json = jsonAdapter.toJson(connections.toTypedArray())
-        prefs.put("connections", json)
-        prefs.put("selected", selected?.name ?: "")
-    }
-
-    private fun load() {
-        connections.clear()
-
-        val json = prefs.get("connections", "[]")
-        val loadedConnections = jsonAdapter.fromJson(json) ?: emptyArray()
-        connections += loadedConnections
-
-        val selectedName = prefs.get("selected", null)
-        selected = connections
-            .firstOrNull { it.name == selectedName }
-            ?: connections.firstOrNull()
+    private fun ConnectionData.connect(): RedisConnection {
+        val jedis = Jedis(host, port)
+        jedis.select(database)
+        return JedisConnection(jedis)
     }
 }

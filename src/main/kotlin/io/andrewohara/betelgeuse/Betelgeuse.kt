@@ -1,21 +1,27 @@
 package io.andrewohara.betelgeuse
 
 import io.andrewohara.betelgeuse.controllers.ConnectionManager
+import io.andrewohara.betelgeuse.controllers.PreferencesSettingsManager
+import io.andrewohara.betelgeuse.controllers.ServerManager
+import io.andrewohara.betelgeuse.models.ConnectionData
 import io.andrewohara.betelgeuse.views.Dialogs
 import io.andrewohara.betelgeuse.views.KeysView
 import io.andrewohara.betelgeuse.views.Menus
 import io.andrewohara.betelgeuse.views.ValueView
 import javafx.application.Application
+import javafx.application.Platform
 import javafx.stage.Stage
 
 import javafx.scene.Scene
 import javafx.scene.control.ButtonType
 import javafx.scene.layout.BorderPane
+import org.slf4j.LoggerFactory
 
 class Betelgeuse: Application() {
 
     companion object {
-        private const val appName = "Betelgeuse - Redis Client"
+        private const val appName = "Betelgeuse - Redis Client and Server"
+        private const val keyPageSize = 1000
         private val defaultWindowSize = 640.toDouble() to 480.toDouble()
 
         @JvmStatic
@@ -24,49 +30,94 @@ class Betelgeuse: Application() {
         }
     }
 
+    private val log = LoggerFactory.getLogger(javaClass)
+
     override fun start(stage: Stage) {
-        try {
-            val connectionManager = ConnectionManager()
+        val settings = PreferencesSettingsManager()
+        val connectionManager = ConnectionManager(settings)
+        val serverManager = ServerManager(settings)
 
-            val valueView = ValueView { connectionManager.getConnection() }
-            val keysView = KeysView(
-                getClient = { connectionManager.getConnection() },
-                selectKey = { valueView.lookupKey(it) },
-                handleDelete = { key ->
-                    val result = Dialogs.confirmDelete(key).showAndWait()
-                    val confirm = result.orElseGet { ButtonType.CANCEL } == ButtonType.OK
-                    if (confirm) {
-                        connectionManager.getConnection()?.delete(key)
-                    }
-
-                    confirm
-                }
-            )
-            val menuBar = Menus.menuBar(
-                createConnection = { connectionManager.createConnection(it) },
-                getConnections = { connectionManager.connections() },
-                currentConnection = { connectionManager.selected() },
-                selectConnection = {
-                    connectionManager.selectConnection(it)
-                    keysView.refresh() // FIXME these components should all listen for a connection-change event
-                    valueView.lookupKey(null)
-                }
-            )
-
-            val layout = BorderPane().apply {
-                top = menuBar
-                left = keysView
-                center = valueView
+        val valueView = ValueView(
+            handleSave = { key, value ->
+                val connection = connectionManager.getConnection() ?: return@ValueView
+                Thread {
+                    connection[key] = value
+                }.start()
             }
+        )
 
-            val scene = Scene(layout, defaultWindowSize.first, defaultWindowSize.second)
-
-            stage.scene = scene
-            stage.title = appName
-            stage.show()
-        } catch (e: Exception) {
-            e.printStackTrace()
-            throw e
+        fun updateKeys(view: KeysView) {
+            Thread {
+                val connection = connectionManager.getConnection() ?: return@Thread
+                val keys = connection.keys().take(keyPageSize).toList()
+                Platform.runLater {
+                    view.update(keys)
+                }
+            }.start()
         }
+
+        val keysView = KeysView(
+            selectKey = { key ->
+                log.info("Selecting key: $key")
+                val connection = connectionManager.getConnection() ?: return@KeysView
+                Thread {
+                    val value = key?.let { connection[it] }
+                    Platform.runLater { valueView.set(key, value) }
+                }.start()
+            },
+            handleDelete = { key ->
+                val result = Dialogs.confirmDelete(key).showAndWait()
+                val confirm = result.orElseGet { ButtonType.CANCEL } == ButtonType.OK
+                if (confirm) {
+                    connectionManager.getConnection()?.delete(key)
+                }
+
+                confirm
+            },
+            handleRefresh = { updateKeys(it) }
+        )
+
+        fun selectConnection(data: ConnectionData) {
+            connectionManager.selectConnection(data)
+            updateKeys(keysView)
+        }
+
+        val menuBar = Menus.menuBar(
+            createConnection = { data ->
+                connectionManager.createConnection(data)
+                selectConnection(data)
+           },
+            getConnections = { connectionManager.connections() },
+            currentConnection = { connectionManager.selected() },
+            selectConnection = { selectConnection(it) },
+            createServer = { data ->
+                serverManager.createServer(data)
+            },
+            getServers = { serverManager.list() },
+            toggleServer = { status ->
+                if (status.running) {
+                    serverManager.stopServer(status.data)
+                } else {
+                    serverManager.startServer(status.data)
+                }
+            }
+        )
+
+        val layout = BorderPane().apply {
+            top = menuBar
+            left = keysView
+            center = valueView
+        }
+
+        val scene = Scene(layout, defaultWindowSize.first, defaultWindowSize.second)
+
+        stage.scene = scene
+        stage.title = appName
+        stage.setOnCloseRequest {
+            serverManager.stopAll()
+        }
+        stage.show()
+
+        updateKeys(keysView)
     }
 }
